@@ -1,4 +1,4 @@
-# Hex Dominion
+# Warfields
 
 A 2D turn-based strategy game on a hexagonal grid. Three races field chess-like
 armies, and terrain shapes every move. Two players share one screen (hotseat).

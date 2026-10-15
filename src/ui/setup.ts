@@ -122,7 +122,7 @@ export function renderSetup(parent: HTMLElement, onStart: (state: GameState) => 
       el(
         'header',
         {},
-        el('h1', {}, '⬢ Hex Dominion'),
+        el('h1', {}, '⬢ Warfields'),
         el('div', { class: 'muted' }, 'A turn-based hex strategy game for two players on one screen.'),
       ),
       el('div', { class: 'players' }, ...playerCards.map((c) => c.card)),
