@@ -1,7 +1,7 @@
 import { TERRAIN } from '../data/terrain';
 import { DIRECTIONS, key, neighbor, ring, type Hex } from './hex';
 import { defOf, inEnemyZoc, raceOf, unitAt } from './state';
-import type { GameState, Unit } from './types';
+import type { GameState, TerrainId, Unit } from './types';
 
 /**
  * Directions a player's units may not step in when `forwardOnly`.
@@ -12,14 +12,19 @@ export function backwardDirections(owner: number): number[] {
   return owner === 0 ? [4, 5] : [1, 2];
 }
 
+/** Movement points for `unit` to enter terrain `t`, ignoring the road-to-road discount. */
+export function terrainCost(state: GameState, unit: Unit, t: TerrainId): number {
+  if (defOf(unit).impassable?.includes(t)) return Infinity;
+  return raceOf(state, unit).terrainCost?.[t] ?? TERRAIN[t].moveCost;
+}
+
 /** Movement points needed for `unit` to step from `from` into `to`. Infinity if impassable. */
 export function stepCost(state: GameState, unit: Unit, from: Hex, to: Hex): number {
   const t = state.tiles[key(to)];
   if (!t) return Infinity;
-  const def = defOf(unit);
-  if (def.impassable?.includes(t)) return Infinity;
-  if (t === 'road' && state.tiles[key(from)] === 'road') return 0.5;
-  return raceOf(state, unit).terrainCost?.[t] ?? TERRAIN[t].moveCost;
+  const cost = terrainCost(state, unit, t);
+  if (cost !== Infinity && t === 'road' && state.tiles[key(from)] === 'road') return 0.5;
+  return cost;
 }
 
 function stopsHere(state: GameState, unit: Unit, h: Hex): boolean {
@@ -84,7 +89,8 @@ function jumpMoves(state: GameState, unit: Unit, [min, max]: [number, number]): 
   for (let d = min; d <= max; d++) {
     for (const h of ring(unit.pos, d)) {
       if (unitAt(state, h)) continue;
-      if (stepCost(state, unit, h, h) === Infinity) continue;
+      const t = state.tiles[key(h)];
+      if (!t || terrainCost(state, unit, t) === Infinity) continue;
       result.add(key(h));
     }
   }
