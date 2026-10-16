@@ -21,7 +21,8 @@ Vite build in `dist/` directly, with no Worker script.
 
 1. Workers & Pages → Create → Import a repository → pick this repo.
 2. Keep the defaults: build command `npm run build`, deploy command `npx wrangler deploy`.
-3. Pushes to the production branch (`main`) deploy to `warfields.<your-subdomain>.workers.dev`.
+3. Pushes to the production branch (`main`) deploy to **https://warfields.bkbuilds.dev** (custom domain set in
+   `wrangler.jsonc`) and to `warfields.<your-subdomain>.workers.dev`.
    Enable builds for non-production branches to get a preview URL for other branches.
 
 **From your own machine:**
