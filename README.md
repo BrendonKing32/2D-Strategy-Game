@@ -12,6 +12,25 @@ npm test           # rules engine test suite
 npm run build      # typecheck + production build into dist/
 ```
 
+## Deploying to Cloudflare
+
+The game ships as an assets-only Cloudflare Worker (`wrangler.jsonc`): Cloudflare serves the static
+Vite build in `dist/` directly, with no Worker script.
+
+**Automatic deploys from GitHub (recommended).** One-time setup in the Cloudflare dashboard:
+
+1. Workers & Pages → Create → Import a repository → pick this repo.
+2. Keep the defaults: build command `npm run build`, deploy command `npx wrangler deploy`.
+3. Pushes to the production branch (`main`) deploy to `warfields.<your-subdomain>.workers.dev`.
+   Enable builds for non-production branches to get a preview URL for other branches.
+
+**From your own machine:**
+
+```bash
+npm run preview:worker   # build and serve through the local Workers runtime (http://localhost:8787)
+npm run deploy           # build and deploy (opens a browser to log in to Cloudflare the first time)
+```
+
 ## How to play
 
 - Pick a race for each player and a battlefield (four handmade maps, or a seeded random map).
