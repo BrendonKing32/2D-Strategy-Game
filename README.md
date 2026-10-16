@@ -36,8 +36,15 @@ npm run deploy           # build and deploy (opens a browser to log in to Cloudf
 ## How to play
 
 - Pick a race for each player and a battlefield (four handmade maps, or a seeded random map).
+- Each player starts with a **home base**, their **Leader** and **300 gold**. Neutral bases are scattered across the map.
+- **Income:** every base you own pays **100 gold** at the start of your turn.
+- **Recruit:** click one of your empty bases (dashed gold outline) to buy a unit. Each base can recruit one unit per turn;
+  the new unit appears on the base and can act from your next turn.
+- **Capture:** end your turn with a unit on a neutral or enemy base. If it's still there at the start of your next turn,
+  the base is yours. A unit parked on an enemy base also stops them recruiting there.
+- **Win** by capturing every base your opponent owns. A player left with no bases loses.
+  The Leader can't be recruited, so losing it hurts, but it doesn't end the game.
 - On your turn every unit may **move once, then attack once**. Attacking ends that unit's turn.
-- **Win** by killing the enemy Leader (♚) or wiping out their army.
 - Controls: click a unit to select it. Blue hexes show its moves, red outlines show targets it can attack.
   Hover a target to preview damage. Drag to pan, scroll to zoom.
   Keys: `E` ends the turn, `N` selects the next unit that can act, `Esc` deselects.
@@ -45,18 +52,18 @@ npm run deploy           # build and deploy (opens a browser to log in to Cloudf
 
 ### Units (chess-like roles)
 
-| Role | Glyph | Moves like | Humans | Elves | Orcs |
-|---|---|---|---|---|---|
-| Leader | ♚ | walks 2 to 3; its death loses the game | King | High Lord | Warchief |
-| Champion | ♛ | walks, or charges in a straight line | Paladin | Bladedancer | Berserker |
-| Heavy | ♜ | slides in straight lines only (rook) | War Chariot | Wind Rider | Boar Juggernaut |
-| Cavalry | ♞ | leaps an exact distance over anything (knight) | Knight | Stag Rider (2 to 3) | Wolf Rider |
-| Ranged | ♝ | walks 2, shoots at range (no retaliation) | Crossbowman (3) | Longbowman (4) | Spear Thrower (2) |
-| Infantry | ♟ | walks 2 to 3 but never backwards (pawn); promotes on the enemy back row | Spearman | Glade Warden | Grunt |
+| Role | Glyph | Cost | Moves like | Humans | Elves | Orcs |
+|---|---|---|---|---|---|---|
+| Leader | ♚ | n/a | walks 2 to 3; your commander, can't be recruited | King | High Lord | Warchief |
+| Champion | ♛ | 350 | walks, or charges in a straight line | Paladin | Bladedancer | Berserker |
+| Heavy | ♜ | 250 | slides in straight lines only (rook) | War Chariot | Wind Rider | Boar Juggernaut |
+| Cavalry | ♞ | 200 | leaps an exact distance over anything (knight) | Knight | Stag Rider (2 to 3) | Wolf Rider |
+| Ranged | ♝ | 150 | walks 2, shoots at range (no retaliation) | Crossbowman (3) | Longbowman (4) | Spear Thrower (2) |
+| Infantry | ♟ | 100 | walks 2 to 3 but never backwards (pawn); promotes on the enemy back row | Spearman | Glade Warden | Grunt |
 
 ### Races
 
-- **Humans**: balanced. Spearmen get *phalanx* (+2 defense next to an ally). Villages heal Humans 1 extra HP.
+- **Humans**: balanced. Spearmen get *phalanx* (+2 defense next to an ally). Villages and bases heal Humans 1 extra HP.
 - **Elves**: fast and fragile. Forest costs them 1 movement and gives them +15% extra defense. Longest bow range.
 - **Orcs**: tough and hard-hitting. Hills cost them 1 movement. *Rage*: +25% damage at or below half HP.
 
@@ -71,6 +78,7 @@ npm run deploy           # build and deploy (opens a browser to log in to Cloudf
 | Mountain | 3 | +40% | blocks sight, +1 range; cavalry and heavies can't enter |
 | Swamp | 3 | -10% | entering ends movement |
 | Village | 1 | +30% | heals the occupant 2 HP per turn |
+| Base | 1 | +25% | income and recruiting; heals the occupant 2 HP per turn |
 | Water | n/a | n/a | impassable |
 
 ### Combat
@@ -96,4 +104,5 @@ Game state is plain JSON, and `applyAction(state, action)` returns a new state.
 That keeps save/load, undo and a future AI opponent straightforward to add.
 
 Maps are ASCII grids in `src/data/maps/index.ts`
-(`.` plains, `=` road, `f` forest, `h` hills, `m` mountain, `~` water, `s` swamp, `v` village).
+(`.` plains, `=` road, `f` forest, `h` hills, `m` mountain, `~` water, `s` swamp, `v` village,
+`B` neutral base, `1`/`2` home bases). Keep maps point-symmetric so both sides are equal.

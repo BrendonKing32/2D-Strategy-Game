@@ -55,6 +55,12 @@ h1, h2, h3 { margin: 0 0 8px; }
 .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; margin: 6px 0; }
 .stats div { background: rgba(0,0,0,0.2); border-radius: 4px; padding: 3px 6px; text-align: center; }
 .preview { border-left: 4px solid #ff4d3d; }
+.gold { font-weight: 500; font-size: 14px; margin-top: 4px; opacity: 0.95; }
+.recruit { border-left: 4px solid var(--accent); display: grid; gap: 6px; }
+.recruit-option { display: grid; grid-template-columns: 1fr auto; gap: 2px 8px; text-align: left; padding: 6px 10px; }
+.recruit-option small { grid-column: 1 / -1; color: var(--muted); }
+.recruit-cost { color: var(--accent); font-weight: 600; }
+button:disabled { opacity: 0.45; cursor: not-allowed; }
 .hud-buttons { display: flex; gap: 8px; flex-wrap: wrap; }
 .log { font-size: 13px; color: var(--muted); display: flex; flex-direction: column; gap: 2px; max-height: 220px; overflow-y: auto; }
 .toast {

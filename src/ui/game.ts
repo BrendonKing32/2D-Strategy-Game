@@ -1,12 +1,12 @@
 import { canAttack, attackRange, previewAttack, terrainDefense } from '../core/combat';
-import { hexToPixel, key, pixelToHex, type Hex } from '../core/hex';
+import { hexToPixel, key, parseKey, pixelToHex, type Hex } from '../core/hex';
 import { legalMoves, terrainCost } from '../core/movement';
-import { applyAction, idleUnits } from '../core/rules';
+import { affordableRoles, applyAction, basesOwnedBy, canRecruitAt, idleUnits, incomeFor, isCapturing } from '../core/rules';
 import { defOf, getUnit, raceOf, terrainAt, unitAt } from '../core/state';
-import type { Action, GameState, Movement, Unit } from '../core/types';
-import { RACES, ROLE_GLYPH, ROLE_NAME } from '../data/races';
+import type { Action, GameState, Movement, Unit, UnitDef } from '../core/types';
+import { RACES, RECRUITABLE, ROLE_GLYPH, ROLE_NAME } from '../data/races';
 import { Camera } from '../render/camera';
-import { drawBoard, HEX_SIZE, mapBounds, PLAYER_COLORS, type ViewState } from '../render/renderer';
+import { drawBoard, emptyView, HEX_SIZE, mapBounds, PLAYER_COLORS, type ViewState } from '../render/renderer';
 import { el } from './dom';
 import { clearSave, saveGame } from './storage';
 
@@ -22,7 +22,7 @@ const pct = (n: number) => `${n >= 0 ? '+' : ''}${Math.round(n * 100)}%`;
 
 export class GameView {
   private state: GameState;
-  private view: ViewState = { selectedId: null, moves: new Set(), targets: new Set(), hover: null };
+  private view: ViewState = emptyView();
   private camera = new Camera();
   private canvas: HTMLCanvasElement;
   private ctx: CanvasRenderingContext2D;
@@ -101,6 +101,7 @@ export class GameView {
 
   private select(id: string | null): void {
     this.view.selectedId = id;
+    this.view.selectedBase = null;
     this.view.moves = new Set();
     this.view.targets = new Set();
     const unit = id ? getUnit(this.state, id) : undefined;
@@ -126,6 +127,13 @@ export class GameView {
     }
     if (sel && !target && this.view.moves.has(key(h))) {
       this.dispatch({ type: 'move', unitId: sel.id, to: h });
+      return;
+    }
+    if (!target && canRecruitAt(this.state, h)) {
+      const already = this.view.selectedBase === key(h);
+      this.select(null);
+      this.view.selectedBase = already ? null : key(h);
+      this.refresh();
       return;
     }
     this.select(target && target.id !== sel?.id ? target.id : null);
@@ -238,6 +246,12 @@ export class GameView {
   // ---------- drawing ----------
 
   private refresh(): void {
+    const s = this.state;
+    this.view.recruitable = new Set(
+      s.winner !== null || affordableRoles(s).length === 0
+        ? []
+        : basesOwnedBy(s, s.current).filter((k) => canRecruitAt(s, parseKey(k))),
+    );
     this.render();
     this.renderHud();
     this.renderOverlay();
@@ -288,6 +302,49 @@ export class GameView {
     );
   }
 
+  private baseInfo(h: Hex): HTMLElement | null {
+    const base = this.state.bases[key(h)];
+    if (!base) return null;
+    const occupant = unitAt(this.state, h);
+    const owner = base.owner === null ? 'Neutral' : this.state.players[base.owner].name;
+    const capture =
+      occupant && isCapturing(this.state, occupant)
+        ? ` · P${occupant.owner + 1} captures it at the start of their next turn`
+        : '';
+    return el('div', {}, `Owner: ${owner}${capture}`);
+  }
+
+  private recruitPanel(baseKey: string): HTMLElement {
+    const s = this.state;
+    const player = s.players[s.current];
+    const race = RACES[player.race];
+    const option = (def: UnitDef) => {
+      const [minR, maxR] = def.range;
+      return el(
+        'button',
+        {
+          class: 'recruit-option',
+          disabled: player.gold < def.cost,
+          onclick: () => this.dispatch({ type: 'recruit', at: parseKey(baseKey), role: def.role }),
+        },
+        el('span', { class: 'recruit-name' }, `${ROLE_GLYPH[def.role]} ${def.name}`),
+        el('span', { class: 'recruit-cost' }, `${def.cost}g`),
+        el(
+          'small',
+          {},
+          `HP ${def.maxHp} · ATK ${def.attack} · DEF ${def.defense} · ${describeMovement(def.movement)} · range ${minR === maxR ? minR : `${minR}-${maxR}`}`,
+        ),
+      );
+    };
+    return el(
+      'div',
+      { class: 'unit-card recruit' },
+      el('div', { class: 'title' }, 'Recruit'),
+      el('div', { class: 'muted' }, `You have ${player.gold} gold. One unit per base per turn; it can act next turn.`),
+      ...RECRUITABLE.map((role) => option(race.units[role])),
+    );
+  }
+
   private renderHud(): void {
     const s = this.state;
     const cur = s.players[s.current];
@@ -301,10 +358,14 @@ export class GameView {
         'div',
         { class: 'turn-banner', style: { background: PLAYER_COLORS[s.current] } },
         s.winner !== null ? `Victory: ${this.playerLabel(s.winner)}` : `Turn ${s.turn} · ${cur.name} — ${RACES[cur.race].name}`,
+        s.winner === null
+          ? el('div', { class: 'gold' }, `Gold ${cur.gold}  ·  +${incomeFor(s, s.current)} per turn`)
+          : null,
       ),
     );
 
     if (sel) parts.push(this.unitCard(sel));
+    if (this.view.selectedBase) parts.push(this.recruitPanel(this.view.selectedBase));
 
     if (sel && hoverUnit && this.view.targets.has(hoverUnit.id)) {
       const p = previewAttack(s, sel, hoverUnit);
@@ -336,6 +397,7 @@ export class GameView {
             {},
             `Move cost ${cost === Infinity ? 'impassable' : cost}${sel ? ` for ${defOf(sel).name}` : ''} · Defense ${pct(def)}`,
           ),
+          this.baseInfo(this.view.hover),
           el('div', { class: 'muted' }, hoverTerrain.description),
         ),
       );
@@ -346,7 +408,8 @@ export class GameView {
         el(
           'div',
           { class: 'unit-card muted' },
-          'Click a unit to select it. Blue hexes: moves. Red outline: attack targets. Drag to pan, scroll to zoom. ',
+          'Click a unit to select it. Blue hexes: moves. Red outline: attack targets. ',
+          'Click a dashed gold base to recruit. End a turn on a base to capture it. Drag to pan, scroll to zoom. ',
           'Keys: E end turn · N next unit · Esc deselect.',
         ),
       );
@@ -362,14 +425,10 @@ export class GameView {
       ),
     );
 
-    const remaining = (p: number) => s.units.filter((u) => u.owner === p).length;
-    parts.push(
-      el(
-        'div',
-        { class: 'muted' },
-        `${s.mapName} · P1 ${remaining(0)} units · P2 ${remaining(1)} units`,
-      ),
-    );
+    const summary = (p: number) =>
+      `P${p + 1}: ${basesOwnedBy(s, p).length} bases, ${s.units.filter((u) => u.owner === p).length} units`;
+    const neutral = Object.values(s.bases).filter((b) => b.owner === null).length;
+    parts.push(el('div', { class: 'muted' }, `${s.mapName} · ${summary(0)} · ${summary(1)} · ${neutral} neutral`));
     parts.push(el('div', { class: 'log' }, ...s.log.slice(-40).reverse().map((line) => el('div', {}, line))));
 
     this.hud.replaceChildren(...parts.filter((p): p is HTMLElement => p !== null));

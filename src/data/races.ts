@@ -35,10 +35,11 @@ export const RACES: Record<RaceId, RaceDef> = {
     name: 'Humans',
     color: '#f2d16b',
     description:
-      'Balanced and disciplined. Spearmen hold the line in phalanx; villages heal Humans for +1 extra HP.',
+      'Balanced and disciplined. Spearmen hold the line in phalanx; villages and bases heal Humans 1 extra HP.',
     healBonus: 1,
     units: units('humans', {
       leader: {
+        cost: 0,
         name: 'King',
         maxHp: 28,
         attack: 9,
@@ -46,9 +47,10 @@ export const RACES: Record<RaceId, RaceDef> = {
         movement: { walk: 2 },
         range: [1, 1],
         abilities: ['command'],
-        description: 'If the King falls, the battle is lost. Inspires adjacent allies.',
+        description: 'Your commander. Cannot be recruited. Inspires adjacent allies (+15% damage).',
       },
       champion: {
+        cost: 350,
         name: 'Paladin',
         maxHp: 24,
         attack: 11,
@@ -58,6 +60,7 @@ export const RACES: Record<RaceId, RaceDef> = {
         description: 'Walks 2, or charges up to 4 in a straight line.',
       },
       heavy: {
+        cost: 250,
         name: 'War Chariot',
         maxHp: 22,
         attack: 9,
@@ -68,6 +71,7 @@ export const RACES: Record<RaceId, RaceDef> = {
         description: 'Drives in straight lines only, like a rook.',
       },
       cavalry: {
+        cost: 200,
         name: 'Knight',
         maxHp: 20,
         attack: 9,
@@ -78,6 +82,7 @@ export const RACES: Record<RaceId, RaceDef> = {
         description: 'Leaps exactly 2 hexes, over anything in the way.',
       },
       ranged: {
+        cost: 150,
         name: 'Crossbowman',
         maxHp: 14,
         attack: 8,
@@ -87,6 +92,7 @@ export const RACES: Record<RaceId, RaceDef> = {
         description: 'Shoots up to 3 hexes. No retaliation against shots.',
       },
       infantry: {
+        cost: 100,
         name: 'Spearman',
         maxHp: 16,
         attack: 6,
@@ -109,6 +115,7 @@ export const RACES: Record<RaceId, RaceDef> = {
     terrainDefenseBonus: { forest: 0.15 },
     units: units('elves', {
       leader: {
+        cost: 0,
         name: 'High Lord',
         maxHp: 24,
         attack: 9,
@@ -116,9 +123,10 @@ export const RACES: Record<RaceId, RaceDef> = {
         movement: { walk: 3 },
         range: [1, 1],
         abilities: ['command'],
-        description: 'If the High Lord falls, the battle is lost. Inspires adjacent allies.',
+        description: 'Your commander. Cannot be recruited. Inspires adjacent allies (+15% damage).',
       },
       champion: {
+        cost: 350,
         name: 'Bladedancer',
         maxHp: 20,
         attack: 12,
@@ -128,6 +136,7 @@ export const RACES: Record<RaceId, RaceDef> = {
         description: 'Walks 3, or dashes up to 4 in a straight line.',
       },
       heavy: {
+        cost: 250,
         name: 'Wind Rider',
         maxHp: 18,
         attack: 9,
@@ -138,6 +147,7 @@ export const RACES: Record<RaceId, RaceDef> = {
         description: 'Races up to 6 hexes in a straight line.',
       },
       cavalry: {
+        cost: 200,
         name: 'Stag Rider',
         maxHp: 17,
         attack: 8,
@@ -148,6 +158,7 @@ export const RACES: Record<RaceId, RaceDef> = {
         description: 'Leaps 2 or 3 hexes, over anything in the way.',
       },
       ranged: {
+        cost: 150,
         name: 'Longbowman',
         maxHp: 12,
         attack: 8,
@@ -157,6 +168,7 @@ export const RACES: Record<RaceId, RaceDef> = {
         description: 'Shoots up to 4 hexes. No retaliation against shots.',
       },
       infantry: {
+        cost: 100,
         name: 'Glade Warden',
         maxHp: 13,
         attack: 6,
@@ -178,6 +190,7 @@ export const RACES: Record<RaceId, RaceDef> = {
     abilities: ['rage'],
     units: units('orcs', {
       leader: {
+        cost: 0,
         name: 'Warchief',
         maxHp: 32,
         attack: 11,
@@ -185,9 +198,10 @@ export const RACES: Record<RaceId, RaceDef> = {
         movement: { walk: 2 },
         range: [1, 1],
         abilities: ['command'],
-        description: 'If the Warchief falls, the battle is lost. Inspires adjacent allies.',
+        description: 'Your commander. Cannot be recruited. Inspires adjacent allies (+15% damage).',
       },
       champion: {
+        cost: 350,
         name: 'Berserker',
         maxHp: 28,
         attack: 12,
@@ -197,6 +211,7 @@ export const RACES: Record<RaceId, RaceDef> = {
         description: 'Walks 2, or charges up to 3 in a straight line.',
       },
       heavy: {
+        cost: 250,
         name: 'Boar Juggernaut',
         maxHp: 26,
         attack: 10,
@@ -207,6 +222,7 @@ export const RACES: Record<RaceId, RaceDef> = {
         description: 'Charges in straight lines only, like a rook.',
       },
       cavalry: {
+        cost: 200,
         name: 'Wolf Rider',
         maxHp: 20,
         attack: 9,
@@ -217,6 +233,7 @@ export const RACES: Record<RaceId, RaceDef> = {
         description: 'Leaps exactly 2 hexes, over anything in the way.',
       },
       ranged: {
+        cost: 150,
         name: 'Spear Thrower',
         maxHp: 15,
         attack: 7,
@@ -226,6 +243,7 @@ export const RACES: Record<RaceId, RaceDef> = {
         description: 'Hurls spears up to 2 hexes. No retaliation against throws.',
       },
       infantry: {
+        cost: 100,
         name: 'Grunt',
         maxHp: 18,
         attack: 7,
@@ -248,15 +266,8 @@ export function unitDef(defId: string): UnitDef {
   return def;
 }
 
-/** Back row, left to right from the owner's point of view. Leader sits in the centre. */
-export const BACK_ROW: UnitRole[] = [
-  'heavy',
-  'cavalry',
-  'ranged',
-  'champion',
-  'leader',
-  'ranged',
-  'cavalry',
-  'heavy',
-];
-export const FRONT_ROW_INFANTRY = 7;
+/** Roles that can be bought at a base, cheapest first. */
+export const RECRUITABLE: UnitRole[] = ['infantry', 'ranged', 'cavalry', 'heavy', 'champion'];
+
+export const STARTING_GOLD = 300;
+export const INCOME_PER_BASE = 100;
