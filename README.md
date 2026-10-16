@@ -20,7 +20,8 @@ Vite build in `dist/` directly, with no Worker script.
 **Automatic deploys from GitHub (recommended).** One-time setup in the Cloudflare dashboard:
 
 1. Workers & Pages → Create → Import a repository → pick this repo.
-2. Keep the defaults: build command `npm run build`, deploy command `npx wrangler deploy`.
+2. Deploy command `npx wrangler deploy` (the default). A separate build command isn't needed:
+   `wrangler.jsonc` runs `npm run build` before every deploy.
 3. Pushes to the production branch (`main`) deploy to **https://warfields.bkbuilds.dev** (custom domain set in
    `wrangler.jsonc`) and to `warfields.<your-subdomain>.workers.dev`.
    Enable builds for non-production branches to get a preview URL for other branches.

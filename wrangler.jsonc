@@ -2,6 +2,9 @@
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "warfields",
   "compatibility_date": "2026-09-01",
+  // Build the game before every `wrangler deploy` / `wrangler dev`, so deploys never depend on
+  // a separate build step being configured in the Cloudflare dashboard.
+  "build": { "command": "npm run build" },
   // Assets-only Worker: Cloudflare serves the Vite build in dist/ directly, no Worker script.
   "assets": {
     "directory": "./dist",

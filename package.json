@@ -9,8 +9,8 @@
     "preview": "vite preview",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
-    "deploy": "npm run build && wrangler deploy",
-    "preview:worker": "npm run build && wrangler dev"
+    "deploy": "wrangler deploy",
+    "preview:worker": "wrangler dev"
   },
   "devDependencies": {
     "typescript": "^5.8.3",
