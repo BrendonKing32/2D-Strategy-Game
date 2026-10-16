@@ -1,7 +1,16 @@
 import { canAttack, attackRange, previewAttack, terrainDefense } from '../core/combat';
 import { hexToPixel, key, parseKey, pixelToHex, type Hex } from '../core/hex';
 import { legalMoves, terrainCost } from '../core/movement';
-import { affordableRoles, applyAction, basesOwnedBy, canRecruitAt, idleUnits, incomeFor, isCapturing } from '../core/rules';
+import {
+  affordableRoles,
+  applyAction,
+  basesOwnedBy,
+  canRecruitAt,
+  idleUnits,
+  incomeFor,
+  isCapturing,
+  unitReadiness,
+} from '../core/rules';
 import { defOf, getUnit, raceOf, terrainAt, unitAt } from '../core/state';
 import type { Action, GameState, Movement, Unit, UnitDef } from '../core/types';
 import { RACES, RECRUITABLE, ROLE_GLYPH, ROLE_NAME } from '../data/races';
@@ -281,8 +290,15 @@ export class GameView {
     const def = defOf(unit);
     const race = raceOf(this.state, unit);
     const [minR, maxR] = attackRange(this.state, unit);
+    const readiness = unitReadiness(this.state, unit);
     const status =
-      unit.owner !== this.state.current ? '' : unit.attacked ? 'Done' : unit.moved ? 'Can still attack' : 'Ready';
+      unit.owner !== this.state.current
+        ? ''
+        : readiness === 'spent'
+          ? 'Done'
+          : readiness === 'partial'
+            ? 'Moved, can still attack'
+            : 'Ready';
     return el(
       'div',
       { class: 'unit-card', style: { borderLeft: `5px solid ${PLAYER_COLORS[unit.owner]}` } },
@@ -409,6 +425,7 @@ export class GameView {
           'div',
           { class: 'unit-card muted' },
           'Click a unit to select it. Blue hexes: moves. Red outline: attack targets. ',
+          'Units darken once they have moved, and darken further when their turn is used up. ',
           'Click a dashed gold base to recruit. End a turn on a base to capture it. Drag to pan, scroll to zoom. ',
           'Keys: E end turn · N next unit · Esc deselect.',
         ),

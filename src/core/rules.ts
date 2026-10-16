@@ -222,6 +222,22 @@ export function applyAction(prev: GameState, action: Action): GameState {
   return state;
 }
 
+export type Readiness = 'ready' | 'partial' | 'spent';
+
+/**
+ * How much of its turn a unit has left, for the current player's units:
+ * - ready: hasn't moved or attacked yet
+ * - partial: has moved and still has an enemy in attack range
+ * - spent: has attacked, or moved with nothing left to attack
+ * Other players' units always read as ready (their flags reset at the start of their turn).
+ */
+export function unitReadiness(state: GameState, unit: Unit): Readiness {
+  if (unit.owner !== state.current || state.winner !== null) return 'ready';
+  if (unit.attacked) return 'spent';
+  if (!unit.moved) return 'ready';
+  return state.units.some((t) => canAttack(state, unit, t)) ? 'partial' : 'spent';
+}
+
 /** Units of the current player that can still do something. */
 export function idleUnits(state: GameState): Unit[] {
   return state.units.filter((u) => u.owner === state.current && !u.attacked);

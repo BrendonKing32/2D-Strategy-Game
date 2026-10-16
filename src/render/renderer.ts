@@ -1,4 +1,5 @@
 import { hexCorners, hexToPixel, key, neighbors, parseKey, type Hex } from '../core/hex';
+import { unitReadiness } from '../core/rules';
 import { defOf } from '../core/state';
 import type { GameState, TerrainId, Unit } from '../core/types';
 import { RACES, ROLE_GLYPH } from '../data/races';
@@ -232,11 +233,10 @@ function drawUnit(ctx: CanvasRenderingContext2D, state: GameState, unit: Unit, s
   const def = defOf(unit);
   const race = RACES[def.race];
   const { x, y } = hexToPixel(unit.pos, s);
-  const exhausted = unit.owner === state.current && unit.attacked;
+  const readiness = unitReadiness(state, unit);
   const r = s * 0.6;
 
   ctx.save();
-  ctx.globalAlpha = exhausted ? 0.55 : 1;
 
   ctx.beginPath();
   ctx.ellipse(x, y + r * 0.85, r * 0.85, r * 0.3, 0, 0, Math.PI * 2);
@@ -250,6 +250,21 @@ function drawUnit(ctx: CanvasRenderingContext2D, state: GameState, unit: Unit, s
   ctx.lineWidth = s * 0.12;
   ctx.strokeStyle = race.color;
   ctx.stroke();
+
+  ctx.fillStyle = '#fff';
+  ctx.font = `${Math.round(s * 0.78)}px "Segoe UI Symbol", "DejaVu Sans", "Noto Sans Symbols 2", serif`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(ROLE_GLYPH[def.role], x, y + s * 0.03);
+
+  // Darken units that have used part or all of their turn, so ready units stand out.
+  if (readiness !== 'ready') {
+    ctx.beginPath();
+    ctx.arc(x, y, r + s * 0.07, 0, Math.PI * 2);
+    ctx.fillStyle = readiness === 'spent' ? 'rgba(12,14,20,0.62)' : 'rgba(12,14,20,0.32)';
+    ctx.fill();
+  }
+
   if (selected) {
     ctx.lineWidth = s * 0.07;
     ctx.strokeStyle = '#fff';
@@ -257,12 +272,6 @@ function drawUnit(ctx: CanvasRenderingContext2D, state: GameState, unit: Unit, s
     ctx.arc(x, y, r + s * 0.12, 0, Math.PI * 2);
     ctx.stroke();
   }
-
-  ctx.fillStyle = '#fff';
-  ctx.font = `${Math.round(s * 0.78)}px "Segoe UI Symbol", "DejaVu Sans", "Noto Sans Symbols 2", serif`;
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.fillText(ROLE_GLYPH[def.role], x, y + s * 0.03);
 
   const base = state.bases[key(unit.pos)];
   if (base && base.owner !== unit.owner) {

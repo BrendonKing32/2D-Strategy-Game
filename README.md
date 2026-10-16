@@ -46,6 +46,7 @@ npm run deploy           # build and deploy (opens a browser to log in to Cloudf
   The Leader can't be recruited, so losing it hurts, but it doesn't end the game.
 - On your turn every unit may **move once, then attack once**. Attacking ends that unit's turn.
 - Controls: click a unit to select it. Blue hexes show its moves, red outlines show targets it can attack.
+  Your units darken a little once they've moved but can still attack, and darken fully once their turn is used up.
   Hover a target to preview damage. Drag to pan, scroll to zoom.
   Keys: `E` ends the turn, `N` selects the next unit that can act, `Esc` deselects.
 - The game autosaves to the browser after every action. Use *Continue* on the menu to resume.
