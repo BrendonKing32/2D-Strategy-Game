@@ -77,6 +77,16 @@ export const TERRAIN: Record<TerrainId, TerrainDef> = {
     color: '#c99a6a',
     description: 'Strong defense. Heals the occupant 2 HP each turn.',
   },
+  base: {
+    id: 'base',
+    name: 'Base',
+    moveCost: 1,
+    defense: 0.25,
+    blocksLineOfSight: false,
+    heal: 2,
+    color: '#a9a294',
+    description: 'Earns 100 gold per turn for its owner and recruits one unit per turn. Heals the occupant 2 HP.',
+  },
 };
 
 export const TERRAIN_GLYPHS: Record<string, TerrainId> = {
@@ -88,4 +98,10 @@ export const TERRAIN_GLYPHS: Record<string, TerrainId> = {
   '~': 'water',
   s: 'swamp',
   v: 'village',
+  B: 'base',
+  '1': 'base',
+  '2': 'base',
 };
+
+/** Glyphs that place a base, and who owns it at the start (null = neutral). */
+export const BASE_GLYPHS: Record<string, number | null> = { B: null, '1': 0, '2': 1 };

@@ -4,7 +4,8 @@ import { generateMap } from './generate';
  * Maps are authored as rows of terrain glyphs in "odd-r" offset layout
  * (odd rows are shifted half a hex to the right). See TERRAIN_GLYPHS:
  *   . plains   = road   f forest   h hills   m mountain   ~ water   s swamp   v village
- * Player 1 deploys on the bottom two rows, Player 2 on the top two.
+ *   B neutral base   1 Player 1 home base   2 Player 2 home base
+ * Player 1 starts at the bottom, Player 2 at the top. Keep maps point-symmetric for fairness.
  */
 export interface MapDef {
   id: string;
@@ -19,17 +20,17 @@ export const MAPS: MapDef[] = [
     name: 'Crossroads',
     description: 'Two roads meet at a central village. Mixed terrain on every flank.',
     rows: [
+      '......2......',
       '.............',
-      '.............',
-      '.ff...=...hh.',
+      'Bff...=...hhB',
       'ff.v..=..h.f.',
       '.....h=f....~',
-      '======v======',
+      'B=====v=====B',
       '~....f=h.....',
       '.f.h..=..v.ff',
-      '.hh...=...ff.',
+      'Bhh...=...ffB',
       '.............',
-      '.............',
+      '......1......',
     ],
   },
   {
@@ -37,17 +38,17 @@ export const MAPS: MapDef[] = [
     name: 'River Valley',
     description: 'A river splits the field. Cross at the bridges or wade through the marsh.',
     rows: [
-      '.............',
+      '......2......',
       '.............',
       'f..h.....h..f',
-      'ff..f...f..ff',
-      '.s...v.v...s.',
+      'ffB.f...f.Bff',
+      '.s...vBv...s.',
       '~~=~~~s~~~=~~',
-      '.s...v.v...s.',
-      'ff..f...f..ff',
+      '.s...vBv...s.',
+      'ffB.f...f.Bff',
       'f..h.....h..f',
       '.............',
-      '.............',
+      '......1......',
     ],
   },
   {
@@ -55,17 +56,17 @@ export const MAPS: MapDef[] = [
     name: 'Highlands',
     description: 'Mountain passes and rolling hills. Orc country.',
     rows: [
+      '......2......',
       '.............',
-      '.............',
-      '..h.m...m.h..',
+      'B.h.m...m.h.B',
       '.hh.mm.mm.hh.',
       'f...h.v.h...f',
-      'ff.m..h..m.ff',
+      'ff.mB.h.Bm.ff',
       'f...h.v.h...f',
       '.hh.mm.mm.hh.',
-      '..h.m...m.h..',
+      'B.h.m...m.h.B',
       '.............',
-      '.............',
+      '......1......',
     ],
   },
   {
@@ -73,17 +74,17 @@ export const MAPS: MapDef[] = [
     name: 'Elderwood',
     description: 'Dense ancient forest broken by glades. Elven home ground.',
     rows: [
-      '.............',
+      '......2......',
       '.............',
       'ff.ff.f.ff.ff',
-      'f.fff...fff.f',
-      '.ff.v.f.v.ff.',
-      'f..ff.s.ff..f',
-      '.ff.v.f.v.ff.',
-      'f.fff...fff.f',
+      'f.fff.B.fff.f',
+      'Bff.v.f.v.ffB',
+      'fB.ff.s.ff.Bf',
+      'Bff.v.f.v.ffB',
+      'f.fff.B.fff.f',
       'ff.ff.f.ff.ff',
       '.............',
-      '.............',
+      '......1......',
     ],
   },
 ];

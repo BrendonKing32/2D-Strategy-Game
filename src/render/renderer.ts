@@ -7,13 +7,29 @@ import type { Bounds, Camera } from './camera';
 
 export const HEX_SIZE = 36;
 export const PLAYER_COLORS = ['#2f6fd6', '#d23b30'];
+export const NEUTRAL_COLOR = '#d8d8d8';
 
 export interface ViewState {
   selectedId: string | null;
+  /** Hex key of the selected base (for recruiting), if any. */
+  selectedBase: string | null;
   moves: Set<string>;
   targets: Set<string>;
+  /** Base keys the current player can recruit at right now. */
+  recruitable: Set<string>;
   hover: Hex | null;
 }
+
+export const emptyView = (): ViewState => ({
+  selectedId: null,
+  selectedBase: null,
+  moves: new Set(),
+  targets: new Set(),
+  recruitable: new Set(),
+  hover: null,
+});
+
+const baseColor = (owner: number | null) => (owner === null ? NEUTRAL_COLOR : PLAYER_COLORS[owner]);
 
 export function mapBounds(state: GameState, size = HEX_SIZE): Bounds {
   const b = { minX: Infinity, minY: Infinity, maxX: -Infinity, maxY: -Infinity };
@@ -174,6 +190,34 @@ function drawDecoration(
       }
       break;
     }
+    case 'base': {
+      const owner = state.bases[key(h)]?.owner ?? null;
+      // Stone keep with crenellations and a flag in the owner's colour.
+      ctx.fillStyle = '#6f6a62';
+      ctx.fillRect(x - s * 0.42, y + s * 0.05, s * 0.84, s * 0.42);
+      ctx.fillStyle = '#857f75';
+      ctx.fillRect(x - s * 0.22, y - s * 0.28, s * 0.44, s * 0.75);
+      ctx.fillStyle = '#6f6a62';
+      for (let i = 0; i < 3; i++) ctx.fillRect(x - s * 0.22 + i * s * 0.17, y - s * 0.38, s * 0.1, s * 0.12);
+      for (const dx of [-0.42, 0.3]) ctx.fillRect(x + dx * s, y - s * 0.05, s * 0.12, s * 0.12);
+      ctx.fillStyle = '#3b3833';
+      ctx.beginPath();
+      ctx.arc(x, y + s * 0.47, s * 0.12, Math.PI, 0);
+      ctx.fill();
+      ctx.strokeStyle = '#3b3833';
+      ctx.lineWidth = s * 0.05;
+      ctx.beginPath();
+      ctx.moveTo(x, y - s * 0.38);
+      ctx.lineTo(x, y - s * 0.74);
+      ctx.stroke();
+      ctx.fillStyle = baseColor(owner);
+      ctx.beginPath();
+      ctx.moveTo(x, y - s * 0.74);
+      ctx.lineTo(x + s * 0.36, y - s * 0.63);
+      ctx.lineTo(x, y - s * 0.52);
+      ctx.fill();
+      break;
+    }
     case 'plains': {
       ctx.fillStyle = 'rgba(70,110,40,0.35)';
       for (let i = 0; i < 3; i++) {
@@ -219,6 +263,29 @@ function drawUnit(ctx: CanvasRenderingContext2D, state: GameState, unit: Unit, s
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.fillText(ROLE_GLYPH[def.role], x, y + s * 0.03);
+
+  const base = state.bases[key(unit.pos)];
+  if (base && base.owner !== unit.owner) {
+    // Capture pending: small flag in the capturer's colour beside the token.
+    const fx = x + r * 0.75;
+    const fy = y - r * 0.95;
+    ctx.strokeStyle = '#fff';
+    ctx.lineWidth = s * 0.06;
+    ctx.beginPath();
+    ctx.moveTo(fx, fy + s * 0.5);
+    ctx.lineTo(fx, fy);
+    ctx.stroke();
+    ctx.fillStyle = PLAYER_COLORS[unit.owner];
+    ctx.strokeStyle = '#fff';
+    ctx.lineWidth = s * 0.03;
+    ctx.beginPath();
+    ctx.moveTo(fx, fy);
+    ctx.lineTo(fx + s * 0.36, fy + s * 0.11);
+    ctx.lineTo(fx, fy + s * 0.22);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+  }
 
   // HP bar
   const w = s * 1.1;
@@ -271,6 +338,25 @@ export function drawBoard(
     ctx.fill();
     ctx.lineWidth = 2;
     ctx.strokeStyle = 'rgba(200,230,255,0.8)';
+    ctx.stroke();
+  }
+
+  for (const k of view.recruitable) {
+    const { x, y } = hexToPixel(parseKey(k), s);
+    hexPath(ctx, x, y, s * 0.9);
+    ctx.lineWidth = 3;
+    ctx.setLineDash([6, 4]);
+    ctx.strokeStyle = '#f2c14e';
+    ctx.stroke();
+    ctx.setLineDash([]);
+  }
+  if (view.selectedBase) {
+    const { x, y } = hexToPixel(parseKey(view.selectedBase), s);
+    hexPath(ctx, x, y, s * 0.9);
+    ctx.fillStyle = 'rgba(242,193,78,0.3)';
+    ctx.fill();
+    ctx.lineWidth = 4;
+    ctx.strokeStyle = '#f2c14e';
     ctx.stroke();
   }
 

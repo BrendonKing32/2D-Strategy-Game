@@ -15,7 +15,9 @@ export function emptyState(cols = 9, rows = 9, races: [RaceId, RaceId] = ['human
     rows,
     tiles,
     units: [],
-    players: races.map((race, i) => ({ race, name: `Player ${i + 1}` })),
+    bases: {},
+    recruitedThisTurn: [],
+    players: races.map((race, i) => ({ race, name: `Player ${i + 1}`, gold: 0 })),
     current: 0,
     turn: 1,
     winner: null,
@@ -40,6 +42,11 @@ export function addUnit(state: GameState, owner: number, role: UnitRole, pos: He
 }
 
 export const at = (col: number, row: number): Hex => offsetToAxial(col, row);
+export function addBase(state: GameState, h: Hex, owner: number | null): void {
+  state.tiles[key(h)] = 'base';
+  state.bases[key(h)] = { owner };
+}
+
 export const setTerrain = (s: GameState, h: Hex, t: TerrainId) => {
   s.tiles[key(h)] = t;
 };

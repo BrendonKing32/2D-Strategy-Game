@@ -55,7 +55,7 @@ function pick(elev: number, moist: number, rand: () => number): string {
   return '.';
 }
 
-/** True if every passable hex in the middle connects to both deployment zones. */
+/** True if both home bases and every neutral base are connected over land. */
 function isConnected(rows: string[]): boolean {
   const passable = (r: number, c: number) => rows[r]?.[c] !== undefined && TERRAIN_GLYPHS[rows[r][c]] !== 'water';
   const seen = new Set<string>();
@@ -72,7 +72,34 @@ function isConnected(rows: string[]): boolean {
       : [[0, 1], [0, -1], [-1, -1], [-1, 0], [1, -1], [1, 0]];
     for (const [dr, dc] of deltas) stack.push([r + dr, c + dc]);
   }
-  return seen.has(`0,${Math.floor(COLS / 2)}`);
+  if (!seen.has(`0,${Math.floor(COLS / 2)}`)) return false;
+  return rows.every((line, r) => [...line].every((ch, c) => ch !== 'B' || seen.has(`${r},${c}`)));
+}
+
+const NEUTRAL_PAIRS = 3;
+
+/** Pick neutral base sites in the top half, spread apart, on open ground. */
+function placeBases(grid: string[][], rand: () => number): void {
+  const mid = Math.floor(ROWS / 2);
+  const candidates: [number, number][] = [];
+  for (let r = 2; r <= mid; r++) {
+    for (let c = 0; c < COLS; c++) {
+      if (r === mid && c >= COLS / 2) continue;
+      if ('.=vfh'.includes(grid[r][c])) candidates.push([r, c]);
+    }
+  }
+  const chosen: [number, number][] = [];
+  while (chosen.length < NEUTRAL_PAIRS && candidates.length) {
+    const [r, c] = candidates.splice(Math.floor(rand() * candidates.length), 1)[0];
+    const farEnough = chosen.every(([cr, cc]) => Math.abs(cr - r) + Math.abs(cc - c) >= 4);
+    // The mirrored copy must not land too close to the original (relevant on the middle row).
+    const mirrorFar = Math.abs(ROWS - 1 - r - r) + Math.abs(COLS - 1 - c - c) >= 4;
+    if (farEnough && mirrorFar) chosen.push([r, c]);
+  }
+  for (const [r, c] of chosen) {
+    grid[r][c] = 'B';
+    grid[ROWS - 1 - r][COLS - 1 - c] = 'B';
+  }
 }
 
 /**
@@ -94,6 +121,9 @@ export function generateMap(seed: number): MapDef {
         grid[ROWS - 1 - r][COLS - 1 - c] = t;
       }
     }
+    placeBases(grid, rand);
+    grid[0][Math.floor(COLS / 2)] = '2';
+    grid[ROWS - 1][Math.floor(COLS / 2)] = '1';
     const rows = grid.map((row) => row.join(''));
     if (isConnected(rows)) {
       return {

@@ -8,7 +8,8 @@ export type TerrainId =
   | 'water'
   | 'swamp'
   | 'road'
-  | 'village';
+  | 'village'
+  | 'base';
 
 export interface TerrainDef {
   id: TerrainId;
@@ -72,6 +73,8 @@ export interface UnitDef {
   /** Terrain this unit can never enter. */
   impassable?: TerrainId[];
   abilities?: UnitAbility[];
+  /** Gold to recruit at a base. Leaders cannot be recruited. */
+  cost: number;
   description: string;
 }
 
@@ -100,6 +103,12 @@ export interface Unit {
 export interface PlayerState {
   race: RaceId;
   name: string;
+  gold: number;
+}
+
+export interface BaseState {
+  /** Player index, or null while neutral. */
+  owner: number | null;
 }
 
 export interface GameState {
@@ -109,6 +118,10 @@ export interface GameState {
   /** Terrain by hex key "q,r". */
   tiles: Record<string, TerrainId>;
   units: Unit[];
+  /** Bases by hex key "q,r". */
+  bases: Record<string, BaseState>;
+  /** Base keys that have already recruited this turn. */
+  recruitedThisTurn: string[];
   players: PlayerState[];
   current: number;
   turn: number;
@@ -120,4 +133,5 @@ export interface GameState {
 export type Action =
   | { type: 'move'; unitId: string; to: Hex }
   | { type: 'attack'; unitId: string; targetId: string }
+  | { type: 'recruit'; at: Hex; role: UnitRole }
   | { type: 'endTurn' };

@@ -1,6 +1,6 @@
 import type { GameState } from '../core/types';
 
-const SAVE_KEY = 'warfields.save.v1';
+const SAVE_KEY = 'warfields.save.v2';
 
 export function saveGame(state: GameState): void {
   try {

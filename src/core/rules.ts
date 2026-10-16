@@ -1,23 +1,34 @@
-import { BACK_ROW, FRONT_ROW_INFANTRY, RACES } from '../data/races';
-import { TERRAIN, TERRAIN_GLYPHS } from '../data/terrain';
+import { INCOME_PER_BASE, RACES, RECRUITABLE, STARTING_GOLD } from '../data/races';
+import { BASE_GLYPHS, TERRAIN, TERRAIN_GLYPHS } from '../data/terrain';
 import type { MapDef } from '../data/maps';
-import { axialToOffset, key, offsetToAxial } from './hex';
+import { axialToOffset, key, offsetToAxial, type Hex } from './hex';
 import { canAttack, canCounter, computeDamage } from './combat';
 import { legalMoves } from './movement';
-import { defOf, getUnit, promotionRow, raceOf } from './state';
-import type { Action, GameState, RaceId, TerrainId, Unit } from './types';
+import { defOf, getUnit, promotionRow, raceOf, unitAt } from './state';
+import type { Action, BaseState, GameState, RaceId, TerrainId, Unit, UnitDef, UnitRole } from './types';
 
 export function createGame(map: MapDef, races: [RaceId, RaceId]): GameState {
   const rows = map.rows.length;
   const cols = Math.max(...map.rows.map((r) => r.length));
   const tiles: Record<string, TerrainId> = {};
+  const bases: Record<string, BaseState> = {};
+  const homes: Hex[] = [];
   map.rows.forEach((line, row) => {
     [...line].forEach((ch, col) => {
       const t = TERRAIN_GLYPHS[ch];
       if (!t) throw new Error(`Map ${map.id}: unknown glyph "${ch}" at ${col},${row}`);
-      tiles[key(offsetToAxial(col, row))] = t;
+      const h = offsetToAxial(col, row);
+      tiles[key(h)] = t;
+      if (ch in BASE_GLYPHS) {
+        const owner = BASE_GLYPHS[ch];
+        bases[key(h)] = { owner };
+        if (owner !== null) homes[owner] = h;
+      }
     });
   });
+  for (const p of [0, 1]) {
+    if (!homes[p]) throw new Error(`Map ${map.id}: missing home base for player ${p + 1}`);
+  }
 
   const state: GameState = {
     mapName: map.name,
@@ -25,7 +36,9 @@ export function createGame(map: MapDef, races: [RaceId, RaceId]): GameState {
     rows,
     tiles,
     units: [],
-    players: races.map((race, i) => ({ race, name: `Player ${i + 1}` })),
+    bases,
+    recruitedThisTurn: [],
+    players: races.map((race, i) => ({ race, name: `Player ${i + 1}`, gold: STARTING_GOLD })),
     current: 0,
     turn: 1,
     winner: null,
@@ -33,48 +46,68 @@ export function createGame(map: MapDef, races: [RaceId, RaceId]): GameState {
     nextUnitId: 1,
   };
 
-  const center = Math.floor(cols / 2);
+  // Each Leader starts one row in front of its home base, keeping the base free for recruiting.
   for (let owner = 0; owner < 2; owner++) {
-    const race = RACES[races[owner]];
-    const backRow = owner === 0 ? rows - 1 : 0;
-    const frontRow = owner === 0 ? rows - 2 : 1;
-    // Mirror columns for player 2 so both armies face each other symmetrically.
-    const colFor = (c: number) => (owner === 0 ? c : cols - 1 - c);
-    const place = (role: keyof typeof race.units, col: number, row: number) => {
-      const pos = offsetToAxial(colFor(col), row);
-      const t = tiles[key(pos)];
-      // Deployment hexes must be enterable; flatten anything awkward.
-      if (!t || TERRAIN[t].moveCost === Infinity || TERRAIN[t].endsMovement || t === 'mountain') {
-        tiles[key(pos)] = 'plains';
-      }
-      const def = race.units[role];
-      state.units.push({
-        id: `u${state.nextUnitId++}`,
-        defId: def.id,
-        owner,
-        pos,
-        hp: def.maxHp,
-        moved: false,
-        attacked: false,
-      });
-    };
-    const leaderIdx = BACK_ROW.indexOf('leader');
-    BACK_ROW.forEach((role, i) => place(role, center - leaderIdx + i, backRow));
-    const half = Math.floor(FRONT_ROW_INFANTRY / 2);
-    for (let i = 0; i < FRONT_ROW_INFANTRY; i++) place('infantry', center - half + i, frontRow);
+    const { col, row } = axialToOffset(homes[owner]);
+    const pos = offsetToAxial(col, owner === 0 ? row - 1 : row + 1);
+    const t = tiles[key(pos)];
+    if (!t || TERRAIN[t].moveCost === Infinity || TERRAIN[t].endsMovement || t === 'mountain') {
+      tiles[key(pos)] = 'plains';
+    }
+    spawn(state, owner, RACES[races[owner]].units.leader, pos);
   }
 
   state.log.push(`Battle of ${map.name}: ${RACES[races[0]].name} vs ${RACES[races[1]].name}.`);
+  startTurn(state);
   return state;
+}
+
+function spawn(state: GameState, owner: number, def: UnitDef, pos: Hex): Unit {
+  const unit: Unit = {
+    id: `u${state.nextUnitId++}`,
+    defId: def.id,
+    owner,
+    pos,
+    hp: def.maxHp,
+    moved: false,
+    attacked: false,
+  };
+  state.units.push(unit);
+  return unit;
 }
 
 const label = (u: Unit) => `P${u.owner + 1} ${defOf(u).name}`;
 
+export function basesOwnedBy(state: GameState, player: number): string[] {
+  return Object.keys(state.bases).filter((k) => state.bases[k].owner === player);
+}
+
+export function incomeFor(state: GameState, player: number): number {
+  return basesOwnedBy(state, player).length * INCOME_PER_BASE;
+}
+
+/** Why the current player can't recruit at `h`, or null if they can. */
+export function recruitBlocker(state: GameState, h: Hex): string | null {
+  const k = key(h);
+  const base = state.bases[k];
+  if (state.winner !== null) return 'The game is over';
+  if (!base || base.owner !== state.current) return 'Not your base';
+  if (unitAt(state, h)) return 'The base is occupied';
+  if (state.recruitedThisTurn.includes(k)) return 'This base already recruited this turn';
+  return null;
+}
+
+export const canRecruitAt = (state: GameState, h: Hex): boolean => recruitBlocker(state, h) === null;
+
+/** A unit standing on a base it doesn't own, which it will capture at the start of its owner's turn. */
+export function isCapturing(state: GameState, unit: Unit): boolean {
+  const base = state.bases[key(unit.pos)];
+  return base !== undefined && base.owner !== unit.owner;
+}
+
 function checkWinner(state: GameState): void {
   for (let p = 0; p < state.players.length; p++) {
-    const mine = state.units.filter((u) => u.owner === p);
-    const hasLeader = mine.some((u) => defOf(u).role === 'leader');
-    if (mine.length === 0 || !hasLeader) {
+    if (basesOwnedBy(state, p).length === 0) {
       state.winner = 1 - p;
       state.log.push(`${state.players[1 - p].name} (${RACES[state.players[1 - p].race].name}) wins!`);
       return;
@@ -83,8 +116,24 @@ function checkWinner(state: GameState): void {
 }
 
 function startTurn(state: GameState): void {
+  const me = state.current;
   for (const u of state.units) {
-    if (u.owner !== state.current) continue;
+    if (u.owner !== me || !isCapturing(state, u)) continue;
+    const base = state.bases[key(u.pos)];
+    const from = base.owner === null ? 'a neutral base' : `P${base.owner + 1}'s base`;
+    base.owner = me;
+    state.log.push(`${label(u)} captures ${from}.`);
+  }
+  checkWinner(state);
+  if (state.winner !== null) return;
+
+  const income = incomeFor(state, me);
+  state.players[me].gold += income;
+  state.log.push(`${state.players[me].name} collects ${income} gold.`);
+  state.recruitedThisTurn = [];
+
+  for (const u of state.units) {
+    if (u.owner !== me) continue;
     u.moved = false;
     u.attacked = false;
     const heal = TERRAIN[state.tiles[key(u.pos)]].heal;
@@ -145,7 +194,22 @@ export function applyAction(prev: GameState, action: Action): GameState {
       attacker.attacked = true;
       attacker.moved = true;
       state.units = state.units.filter((u) => u.hp > 0);
-      checkWinner(state);
+      break;
+    }
+    case 'recruit': {
+      const blocker = recruitBlocker(state, action.at);
+      if (blocker) throw new Error(blocker);
+      if (!RECRUITABLE.includes(action.role)) throw new Error('That unit cannot be recruited');
+      const player = state.players[state.current];
+      const def = RACES[player.race].units[action.role];
+      if (player.gold < def.cost) throw new Error(`Not enough gold (${def.cost} needed)`);
+      player.gold -= def.cost;
+      const unit = spawn(state, state.current, def, action.at);
+      // Fresh recruits muster this turn and act from the next.
+      unit.moved = true;
+      unit.attacked = true;
+      state.recruitedThisTurn.push(key(action.at));
+      state.log.push(`${player.name} recruits a ${def.name} for ${def.cost} gold.`);
       break;
     }
     case 'endTurn': {
@@ -161,4 +225,10 @@ export function applyAction(prev: GameState, action: Action): GameState {
 /** Units of the current player that can still do something. */
 export function idleUnits(state: GameState): Unit[] {
   return state.units.filter((u) => u.owner === state.current && !u.attacked);
+}
+
+/** Roles the current player can afford right now. */
+export function affordableRoles(state: GameState): UnitRole[] {
+  const player = state.players[state.current];
+  return RECRUITABLE.filter((r) => RACES[player.race].units[r].cost <= player.gold);
 }

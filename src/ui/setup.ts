@@ -3,7 +3,7 @@ import type { GameState, RaceId } from '../core/types';
 import { getMap, MAPS } from '../data/maps';
 import { RACES } from '../data/races';
 import { Camera } from '../render/camera';
-import { drawBoard, mapBounds, PLAYER_COLORS } from '../render/renderer';
+import { drawBoard, emptyView, mapBounds, PLAYER_COLORS } from '../render/renderer';
 import { el } from './dom';
 import { loadGame } from './storage';
 
@@ -109,7 +109,7 @@ export function renderSetup(parent: HTMLElement, onStart: (state: GameState) => 
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     const cam = new Camera();
     cam.fit(mapBounds(state), w, h, 8);
-    drawBoard(ctx, state, { selectedId: null, moves: new Set(), targets: new Set(), hover: null }, cam, w, h);
+    drawBoard(ctx, state, emptyView(), cam, w, h);
   }
 
   const saved = loadGame();
@@ -147,25 +147,35 @@ export function renderSetup(parent: HTMLElement, onStart: (state: GameState) => 
         el(
           'ul',
           { class: 'rules-list' },
+          el('li', {}, 'You start with a home base, your Leader (♚) and 300 gold. Build your army as you go.'),
+          el('li', {}, 'Each base you own pays 100 gold at the start of your turn.'),
+          el(
+            'li',
+            {},
+            'Click one of your empty bases to recruit: one unit per base per turn. Recruits appear on the base and act next turn.',
+          ),
+          el(
+            'li',
+            {},
+            'Capture a neutral or enemy base by ending your turn on it: it flips at the start of your next turn if you are still there.',
+          ),
+          el('li', {}, 'Win by taking every base your opponent owns. A player with no bases is out.'),
           el('li', {}, 'Each turn, every unit may move once and then attack once. Attacking ends that unit’s turn.'),
-          el('li', {}, 'Win by slaying the enemy Leader (♚) or wiping out their army.'),
           el(
             'li',
             {},
             'Units move like chess pieces: ♟ infantry only advance, ♞ cavalry leap, ♜ heavies slide in straight lines, ♛ champions walk or charge, ♝ ranged units shoot.',
           ),
-          el('li', {}, 'Infantry reaching the enemy back row are promoted to Champions.'),
           el(
             'li',
             {},
-            'Terrain matters: forests and mountains block sight, hills extend range, villages heal, swamps stop you, roads speed you up.',
+            'Terrain matters: forests and mountains block sight, hills extend range, villages and bases heal, swamps stop you, roads speed you up.',
           ),
           el(
             'li',
             {},
-            'Stepping next to an enemy ends your move (zone of control). Melee attacks are answered with a half-strength counter; ranged shots are not.',
+            'Stepping next to an enemy ends your move (zone of control). Melee attacks are answered with a half-strength counter; ranged shots are not. Flanking and Leaders add damage.',
           ),
-          el('li', {}, 'Flank: each extra ally next to the target adds +10% damage. Leaders give adjacent allies +15%.'),
         ),
       ),
     ),
