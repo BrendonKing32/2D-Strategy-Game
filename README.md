@@ -99,6 +99,7 @@ src/data/     terrain, races/units and maps (edit these to add content)
 src/render/   canvas renderer and camera
 src/ui/       setup screen, game view / HUD, save storage
 tests/        vitest suites for the rules engine
+public/units/ unit art, one <race>.<role>.webp per unit (transparent, 256 px tall); a missing file falls back to the glyph
 ```
 
 Game state is plain JSON, and `applyAction(state, action)` returns a new state.

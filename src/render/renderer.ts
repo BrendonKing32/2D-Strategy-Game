@@ -5,6 +5,7 @@ import type { GameState, TerrainId, Unit } from '../core/types';
 import { RACES, ROLE_GLYPH } from '../data/races';
 import { TERRAIN } from '../data/terrain';
 import type { Bounds, Camera } from './camera';
+import { READINESS_SHADE, unitSprite } from './sprites';
 
 export const HEX_SIZE = 36;
 export const PLAYER_COLORS = ['#2f6fd6', '#d23b30'];
@@ -251,18 +252,46 @@ function drawUnit(ctx: CanvasRenderingContext2D, state: GameState, unit: Unit, s
   ctx.strokeStyle = race.color;
   ctx.stroke();
 
-  ctx.fillStyle = '#fff';
-  ctx.font = `${Math.round(s * 0.78)}px "Segoe UI Symbol", "DejaVu Sans", "Noto Sans Symbols 2", serif`;
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.fillText(ROLE_GLYPH[def.role], x, y + s * 0.03);
+  const sprite = unitSprite(def.id, readiness);
+  if (!sprite) {
+    ctx.fillStyle = '#fff';
+    ctx.font = `${Math.round(s * 0.78)}px "Segoe UI Symbol", "DejaVu Sans", "Noto Sans Symbols 2", serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(ROLE_GLYPH[def.role], x, y + s * 0.03);
+  }
 
   // Darken units that have used part or all of their turn, so ready units stand out.
   if (readiness !== 'ready') {
     ctx.beginPath();
     ctx.arc(x, y, r + s * 0.07, 0, Math.PI * 2);
-    ctx.fillStyle = readiness === 'spent' ? 'rgba(12,14,20,0.62)' : 'rgba(12,14,20,0.32)';
+    ctx.fillStyle = `rgba(12,14,20,${READINESS_SHADE[readiness]})`;
     ctx.fill();
+  }
+
+  if (sprite) {
+    // The art stands on the token like a miniature on its base, rising above it but staying
+    // inside the hex. It comes pre-shaded to match the token. A small glyph badge keeps the
+    // role readable.
+    const scale = Math.min((s * 1.5) / sprite.height, (s * 1.45) / sprite.width);
+    const w = sprite.width * scale;
+    const h = sprite.height * scale;
+    ctx.drawImage(sprite, x - w / 2, y + r * 0.75 - h, w, h);
+
+    const bx = x - r * 0.78;
+    const by = y - r * 0.78;
+    ctx.beginPath();
+    ctx.arc(bx, by, s * 0.19, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(12,14,20,0.85)';
+    ctx.fill();
+    ctx.lineWidth = s * 0.04;
+    ctx.strokeStyle = race.color;
+    ctx.stroke();
+    ctx.fillStyle = '#fff';
+    ctx.font = `${Math.round(s * 0.28)}px "Segoe UI Symbol", "DejaVu Sans", "Noto Sans Symbols 2", serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(ROLE_GLYPH[def.role], bx, by + s * 0.01);
   }
 
   if (selected) {

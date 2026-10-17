@@ -16,6 +16,7 @@ import type { Action, GameState, Movement, Unit, UnitDef } from '../core/types';
 import { RACES, RECRUITABLE, ROLE_GLYPH, ROLE_NAME } from '../data/races';
 import { Camera } from '../render/camera';
 import { drawBoard, emptyView, HEX_SIZE, mapBounds, PLAYER_COLORS, type ViewState } from '../render/renderer';
+import { loadUnitSprites } from '../render/sprites';
 import { el } from './dom';
 import { clearSave, saveGame } from './storage';
 
@@ -66,6 +67,7 @@ export class GameView {
     this.cleanup.push(() => ro.disconnect());
     this.resize(true);
     this.refresh();
+    loadUnitSprites(() => this.render());
     // Debug/test hook: lets automated browser tests locate hexes on screen.
     if (import.meta.env.DEV) {
       (window as unknown as { __hex: unknown }).__hex = {
